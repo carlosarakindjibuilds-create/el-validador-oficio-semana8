@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Validador del Oficio - Escudo Logístico Semana 8</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; display: flex; gap: 20px; flex-wrap: wrap; }
+        .col-mapa { flex: 1.3; min-width: 300px; background: #1e293b; padding: 24px; border-radius: 12px; border: 1px solid #334155; }
+        .col-auditoria { flex: 0.7; min-width: 250px; background: #0f172a; padding: 24px; border-radius: 12px; border: 1px solid #334155; }
+        .tag-dragon { background-color: rgba(239, 68, 68, 0.15); color: #f87171; padding: 6px 12px; border-radius: 20px; font-size: 12px; display: inline-block; font-weight: bold; margin-bottom: 10px; }
+        h1 { margin: 0 0 6px 0; font-size: 24px; color: #ffffff; }
+        p.subtitle { margin: 0 0 20px 0; font-size: 13px; color: #94a3b8; }
+        
+        /* Simulación del mapa */
+        .map-canvas { width: 100%; height: 320px; background-color: #020617; border-radius: 8px; position: relative; overflow: hidden; border: 2px solid #475569; }
+        .ruta-linea { position: absolute; height: 6px; background: linear-gradient(90px, #3b82f6, #10b981); width: 80%; top: 50%; left: 10%; border-radius: 3px; }
+        .zona-riesgo { position: absolute; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 2px dashed #ef4444; width: 100px; height: 100px; top: 30%; left: 40%; }
+        .marcador { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; }
+        .origen { background-color: #3b82f6; top: 49%; left: 9%; }
+        .destino { background-color: #10b981; top: 49%; left: 88%; }
+        .vehiculo { background-color: #eab308; width: 16px; height: 16px; border-radius: 4px; position: absolute; top: 48%; left: 15%; transition: all 1s ease; }
+        
+        /* Alerta de Brecha de Seguridad */
+        .escudo-alerta { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(220, 38, 38, 0.95); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; z-index: 10; animation: parpadeo 1s infinite alternate; }
+        @keyframes parpadeo { from { background: rgba(185, 28, 28, 0.95); } to { background: rgba(220, 38, 38, 0.95); } }
+        
+        /* Controles */
+        .controls-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .btn-voz { width: 100%; padding: 14px; background-color: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-secundarios { display: flex; gap: 10px; }
+        .btn-action { flex: 1; padding: 12px; background-color: #334155; color: #f1f5f9; border: 1px solid #475569; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .btn-action:hover { background-color: #475569; }
+        .burbuja-feedback { background-color: #1e293b; padding: 12px; border-radius: 8px; border: 1px solid #475569; font-size: 14px; min-height: 45px; text-align: center; color: #cbd5e1; }
+        
+        /* Panel de Monitoreo JSON */
+        .json-header { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; display: block; }
+        pre { background-color: #030712; padding: 14px; border-radius: 8px; border: 1px solid #1e293b; color: #4ade80; font-family: monospace; font-size: 12px; overflow-x: auto; margin: 0; }
+        .input-sanitizado { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: white; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Panel Izquierdo: Interfaz de Navegación de Doña Mari -->
+        <div class="col-mapa">
+            <span class="tag-dragon">DRAGON STACK ACTIVO</span>
+            <h1>El Validador del Oficio</h1>
+            <p class="subtitle">Módulo de Logística y Escudo contra Ingeniería Social (Semana 8)</p>
+            
+            <div class="map-canvas">
+                <div class="ruta-linea"></div>
+                <div class="zona-riesgo"></div>
+                <div class="marcador origen"></div>
+                <div class="marcador destino"></div>
+                <div id="vehiculoSimulado" class="vehiculo"></div>
+                
+                <!-- Letrero de bloqueo de seguridad oculto por defecto -->
+                <div id="escudoSeguridad" class="escudo-alerta" style="display: none;">
+                    <h2 style="font-size: 28px; margin: 0 0 10px 0;">⚠️ BRECHA DETECTADA ⚠️</h2>
+                    <p style="font-weight: bold; font-size: 16px;">IA bloqueó llamada de Extorsión / Fraude</p>
+                    <p style="font-size: 13px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">Protocolo de Protección de Datos de Doña Mari activado en Supabase.</p>
+                    <button onclick="restaurarSistema()" style="margin-top: 15px; padding: 8px 16px; background: white; color: #b91c1c; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Reiniciar Escudo</button>
+                </div>
+            </div>
+            
+            <div class="controls-grid">
+                <!-- Sanitización Frontend Obligatoria por la rúbrica -->
+                <input type="text" id="inputManual" class="input-sanitizado" placeholder="Escribe un comando o simula texto aquí..." oninput="validarTextoInput(this)">
+                
+                <button class="btn-voz" id="btnMicrofono" onclick="activarEscudoVoz()">🎤 Simular Escudo de Voz (Hablar)</button>
+                <div class="btn-secundarios">
+                    <button class="btn-action" onclick="simularViajeLogistico()">Simular Viaje</button>
+                    <button class="btn-action" style="border-color: #ef4444; color: #f87171;" onclick="inyectarAtaqueSocial()">Simular Llamada Extorsión</button>
+                </div>
+                <div class="burbuja-feedback" id="feedbackVoz">Sistema listo para proteger la ruta.</div>
+            </div>
+        </div>
+        
+        <!-- Panel Derecho: Auditoría Técnica JSON exigido por el profesor -->
+        <div class="col-auditoria">
+            <span class="json-header">Telemetría Estructurada y Seguridad (JSON)</span>
+            <pre id="jsonBlock">Cargando datos del escudo...</pre>
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
